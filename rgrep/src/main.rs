@@ -1,4 +1,5 @@
-use std::{env, os};
+use std::env;
+use std::fs;
 
 struct Config {
     pattern: String,
@@ -23,6 +24,27 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let new = Config { pattern, path };
-    println!(" pattern: {}  path: {}", new.pattern, new.path);
+    let config = Config { pattern, path };
+
+    let contents = match fs::read_to_string(&config.path) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("cant read the {}: {}  ", config.path, e);
+            std::process::exit(1);
+        }
+    };
+    let text = search(&config.pattern, &contents);
+    for v in text {
+        println!("{}", v);
+    }
+}
+
+fn search<'a>(pattern: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut out = Vec::new();
+    for line in contents.lines() {
+        if line.contains(pattern) {
+            out.push(line);
+        }
+    }
+    out
 }
