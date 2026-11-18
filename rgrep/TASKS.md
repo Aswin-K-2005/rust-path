@@ -5,7 +5,7 @@
 ## Tasks
 - [x] Parse args by hand from `std::env::args()` into a `Config` struct
 - [x] Search one file, print matching lines
-- [ ] `-i` case-insensitive
+- [x] `-i` case-insensitive
 - [ ] `-n` line numbers
 - [ ] `-v` invert match
 - [ ] `-r` recurse directories (`std::fs::read_dir`, no walkdir crate)
