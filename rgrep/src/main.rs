@@ -6,6 +6,7 @@ struct Config {
     path: String,
     ignore_case: bool,
     line_number: bool,
+    invert: bool,
 }
 
 struct Match<'a> {
@@ -17,11 +18,13 @@ fn main() {
     let mut ignore_case = false;
 
     let mut line_number = false;
+    let mut invert = false;
     let mut rest = Vec::new();
     for arg in env::args().skip(1) {
         match arg.as_str() {
             "-i" => ignore_case = true,
             "-n" => line_number = true,
+            "-v" => invert = true,
             _ => rest.push(arg),
         }
     }
@@ -45,6 +48,7 @@ fn main() {
         path,
         ignore_case,
         line_number,
+        invert,
     };
 
     let contents = match fs::read_to_string(&config.path) {
@@ -54,7 +58,12 @@ fn main() {
             std::process::exit(1);
         }
     };
-    let text = search(&config.pattern, &contents, config.ignore_case);
+    let text = search(
+        &config.pattern,
+        &contents,
+        config.ignore_case,
+        config.invert,
+    );
     for v in text {
         if config.line_number {
             println!("{} : {}", v.line_no, v.text);
@@ -64,14 +73,17 @@ fn main() {
     }
 }
 
-fn search<'a>(pattern: &str, contents: &'a str, ignore_case: bool) -> Vec<Match<'a>> {
+fn search<'a>(pattern: &str, contents: &'a str, ignore_case: bool, invert: bool) -> Vec<Match<'a>> {
     let mut out = Vec::new();
     for (i, line) in contents.lines().enumerate() {
-        let matched = if ignore_case {
+        let mut matched = if ignore_case {
             line.to_lowercase().contains(&pattern.to_lowercase())
         } else {
             line.contains(pattern)
         };
+        if invert {
+            matched = !matched;
+        }
         if matched {
             out.push(Match {
                 line_no: i + 1,
