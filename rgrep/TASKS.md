@@ -8,7 +8,7 @@
 - [x] `-i` case-insensitive
 - [x] `-n` line numbers
 - [x] `-v` invert match
-- [ ] `-r` recurse directories (`std::fs::read_dir`, no walkdir crate)
+- [x] `-r` recurse directories (`std::fs::read_dir`, no walkdir crate)
 - [ ] Highlight matches in color (ANSI codes by hand)
 - [ ] Custom `enum RgrepError` + `impl From<io::Error>` + `impl Display`; no `unwrap()` outside tests
 - [ ] Unit tests for the search fn; one integration test in `tests/`

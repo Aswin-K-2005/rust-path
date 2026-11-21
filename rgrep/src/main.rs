@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::path::Path;
 
 struct Config {
     pattern: String,
@@ -7,6 +8,7 @@ struct Config {
     ignore_case: bool,
     line_number: bool,
     invert: bool,
+    recursive: bool,
 }
 
 struct Match<'a> {
@@ -14,17 +16,70 @@ struct Match<'a> {
     text: &'a str,
 }
 
+fn grep_file(config: &Config, path: &Path) {
+    if path.is_dir() {
+        let entries = match fs::read_dir(path) {
+            Ok(e) => e,
+            Err(err) => {
+                eprintln!("error occured while reading {}", err);
+                return;
+            }
+        };
+        for entry in entries {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            let new_path = entry.path();
+            if new_path.ends_with("target") {
+                continue;
+            }
+
+            grep_file(config, &new_path);
+        }
+        return;
+    }
+    let contents = match fs::read_to_string(&path) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("cant read the {}: {}  ", path.display(), e);
+            return;
+        }
+    };
+    let text = search(
+        &config.pattern,
+        &contents,
+        config.ignore_case,
+        config.invert,
+    );
+    let prefix = if config.recursive {
+        format!("{} :", path.display())
+    } else {
+        String::new()
+    };
+
+    for v in text {
+        if config.line_number {
+            println!("{}{} : {}", prefix, v.line_no, v.text);
+        } else {
+            println!("{}{}", prefix, v.text);
+        }
+    }
+}
+
 fn main() {
     let mut ignore_case = false;
 
     let mut line_number = false;
     let mut invert = false;
+    let mut recursive = false;
     let mut rest = Vec::new();
     for arg in env::args().skip(1) {
         match arg.as_str() {
             "-i" => ignore_case = true,
             "-n" => line_number = true,
             "-v" => invert = true,
+            "-r" => recursive = true,
             _ => rest.push(arg),
         }
     }
@@ -49,27 +104,15 @@ fn main() {
         ignore_case,
         line_number,
         invert,
+        recursive,
     };
+    let new_path = Path::new(&config.path);
 
-    let contents = match fs::read_to_string(&config.path) {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("cant read the {}: {}  ", config.path, e);
-            std::process::exit(1);
-        }
-    };
-    let text = search(
-        &config.pattern,
-        &contents,
-        config.ignore_case,
-        config.invert,
-    );
-    for v in text {
-        if config.line_number {
-            println!("{} : {}", v.line_no, v.text);
-        } else {
-            println!("{}", v.text);
-        }
+    if new_path.is_dir() && !config.recursive {
+        eprintln!("{} is a folder use -r ", new_path.display());
+        std::process::exit(1);
+    } else {
+        grep_file(&config, new_path);
     }
 }
 

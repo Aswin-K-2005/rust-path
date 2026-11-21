@@ -1,26 +1,27 @@
 use std::{fs, path::Path};
 
-fn count_files(dir: &Path) -> usize {
+fn list(dir: &Path) {
     let entries = match fs::read_dir(dir) {
         Ok(e) => e,
-        Err(_) => return 0,
+        Err(_) => return,
     };
-    let mut total = 0;
     for entry in entries {
         let entry = match entry {
             Ok(e) => e,
             Err(_) => continue,
         };
         let path = entry.path();
+        if path.ends_with("target") {
+            continue;
+        }
         if path.is_dir() {
-            total += count_files(&path);
+            list(&path);
         } else {
-            total += 1;
+            println!("{}", path.display())
         }
     }
-    total
 }
 
 fn main() {
-    println!("{}", count_files(Path::new(".")));
+    list(Path::new("."));
 }

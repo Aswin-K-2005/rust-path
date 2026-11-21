@@ -6,3 +6,4 @@ rgrep rust demo/poem.txt
 rgrep -i rust demo/poem.txt
 rgrep -i -n rust demo/poem.txt
 rgrep -v -n rust demo/poem.txt
+rgrep -r -n borrow .
