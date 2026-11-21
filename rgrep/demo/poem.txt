@@ -1,0 +1,5 @@
+Rust is fast.
+The borrow checker said no.
+rust never sleeps,
+lifetimes keep the pointers honest.
+I fixed it and it compiled.

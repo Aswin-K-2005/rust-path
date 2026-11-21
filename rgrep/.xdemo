@@ -1,0 +1,8 @@
+# title: My Rust journey 🦀
+# subtitle: building grep from scratch, one flag at a time
+# build: cargo build -q
+# path: target/debug
+rgrep rust demo/poem.txt
+rgrep -i rust demo/poem.txt
+rgrep -i -n rust demo/poem.txt
+rgrep -v -n rust demo/poem.txt
