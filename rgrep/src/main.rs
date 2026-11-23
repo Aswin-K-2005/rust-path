@@ -2,6 +2,9 @@ use std::env;
 use std::fs;
 use std::path::Path;
 
+const RED: &str = "\x1b[1;31m";
+const RESET: &str = "\x1b[0m";
+
 struct Config {
     pattern: String,
     path: String,
@@ -14,6 +17,24 @@ struct Config {
 struct Match<'a> {
     line_no: usize,
     text: &'a str,
+}
+
+fn highlight(line: &str, pattern: &str, ignore_case: bool) -> String {
+    let found = if ignore_case {
+        line.to_lowercase().find(&pattern.to_lowercase())
+    } else {
+        line.find(pattern)
+    };
+    match found {
+        Some(t) => {
+            let end = pattern.len() + t;
+            let before = &line[..t];
+            let matched = &line[t..end];
+            let after = &line[end..];
+            format!("{}{}{}{}{}", before, RED, matched, RESET, after)
+        }
+        None => line.to_string(),
+    }
 }
 
 fn grep_file(config: &Config, path: &Path) {
@@ -60,9 +81,18 @@ fn grep_file(config: &Config, path: &Path) {
 
     for v in text {
         if config.line_number {
-            println!("{}{} : {}", prefix, v.line_no, v.text);
+            println!(
+                "{}{} : {}",
+                prefix,
+                v.line_no,
+                highlight(v.text, &config.pattern, config.ignore_case)
+            );
         } else {
-            println!("{}{}", prefix, v.text);
+            println!(
+                "{}{}",
+                prefix,
+                highlight(v.text, &config.pattern, config.ignore_case)
+            );
         }
     }
 }

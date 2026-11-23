@@ -9,7 +9,7 @@
 - [x] `-n` line numbers
 - [x] `-v` invert match
 - [x] `-r` recurse directories (`std::fs::read_dir`, no walkdir crate)
-- [ ] Highlight matches in color (ANSI codes by hand)
+- [x] Highlight matches in color (ANSI codes by hand)
 - [ ] Custom `enum RgrepError` + `impl From<io::Error>` + `impl Display`; no `unwrap()` outside tests
 - [ ] Unit tests for the search fn; one integration test in `tests/`
 - [ ] Replace hand parsing with `clap` (derive) — note what got simpler
