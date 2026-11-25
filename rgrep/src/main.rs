@@ -1,5 +1,7 @@
 use std::env;
+use std::fmt;
 use std::fs;
+use std::io;
 use std::path::Path;
 
 const RED: &str = "\x1b[1;31m";
@@ -12,6 +14,23 @@ struct Config {
     line_number: bool,
     invert: bool,
     recursive: bool,
+}
+
+enum RgrepError {
+    Io(io::Error),
+}
+
+impl fmt::Display for RgrepError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RgrepError::Io(e) => write!(f, "io error: {}", e),
+        }
+    }
+}
+impl From<io::Error> for RgrepError {
+    fn from(e: io::Error) -> Self {
+        RgrepError::Io(e)
+    }
 }
 
 struct Match<'a> {
@@ -37,15 +56,9 @@ fn highlight(line: &str, pattern: &str, ignore_case: bool) -> String {
     }
 }
 
-fn grep_file(config: &Config, path: &Path) {
+fn grep_file(config: &Config, path: &Path) -> Result<(), RgrepError> {
     if path.is_dir() {
-        let entries = match fs::read_dir(path) {
-            Ok(e) => e,
-            Err(err) => {
-                eprintln!("error occured while reading {}", err);
-                return;
-            }
-        };
+        let entries = fs::read_dir(path)?;
         for entry in entries {
             let entry = match entry {
                 Ok(e) => e,
@@ -56,17 +69,13 @@ fn grep_file(config: &Config, path: &Path) {
                 continue;
             }
 
-            grep_file(config, &new_path);
+            if let Err(e) = grep_file(config, &new_path) {
+                eprintln!("rgrep: {}", e);
+            }
         }
-        return;
+        return Ok(());
     }
-    let contents = match fs::read_to_string(&path) {
-        Ok(t) => t,
-        Err(e) => {
-            eprintln!("cant read the {}: {}  ", path.display(), e);
-            return;
-        }
-    };
+    let contents = fs::read_to_string(path)?;
     let text = search(
         &config.pattern,
         &contents,
@@ -95,6 +104,7 @@ fn grep_file(config: &Config, path: &Path) {
             );
         }
     }
+    Ok(())
 }
 
 fn main() {
@@ -114,7 +124,7 @@ fn main() {
         }
     }
 
-    let pattern = match rest.get(0) {
+    let pattern = match rest.first() {
         Some(p) => p.clone(),
         None => {
             eprintln!("Pattern missing T-T");
@@ -142,7 +152,10 @@ fn main() {
         eprintln!("{} is a folder use -r ", new_path.display());
         std::process::exit(1);
     } else {
-        grep_file(&config, new_path);
+        if let Err(e) = grep_file(&config, new_path) {
+            eprintln!("rgrep: {}", e);
+            std::process::exit(1);
+        }
     }
 }
 
